@@ -21,6 +21,11 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::group(['prefix' => 'decuong'], function() {
     Route::get('get-list-mon-hoc/{id_gv}', 'Api\decuongController@getlistmonhoc');
     Route::get('get-ke-hoach-giang-day/{id_hocphan}', 'Api\decuongController@getkehoachgiangday');
+    Route::get('get-lich-ngay-hom-nay/{id_gv}', 'Api\decuongController@getlichhomnay');
+    Route::get('get-lich/{id_gv}', 'Api\decuongController@getlich');
+
+    Route::post('login-goole', 'Api\decuongController@login_google');
+    Route::post('insert-lsdn', 'Api\decuongController@insert_lsdn');
 });
 
 Route::group(['middleware' => 'api','prefix' => 'auth'], function ($router) {

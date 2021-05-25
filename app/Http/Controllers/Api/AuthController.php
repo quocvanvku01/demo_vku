@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\User;
+//use App\Http\Controllers\Api\DB;
+use DB;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -22,9 +25,12 @@ class AuthController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
+        $user = User::find($request->email);
+
         return response()->json([
             'success' => true,
-            'token' => $token
+            'token' => $token,
+            'id_gv' => $user->id_gv
         ]);
     }
     public function register(Request $request) {
@@ -37,7 +43,7 @@ class AuthController extends Controller
     public function insert() {
         $data = ([
             'name' => 'Admin',
-            'email' => 'admin@gmail.com',
+            'email' => 'pqvan@vku.udn.vn',
             'password' => Hash::make("123456")
         ]);
         $user = new User($data);
