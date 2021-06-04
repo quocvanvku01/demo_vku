@@ -26,6 +26,9 @@ Route::group(['prefix' => 'decuong'], function() {
 
     Route::post('login-goole', 'Api\decuongController@login_google');
     Route::post('insert-lsdn', 'Api\decuongController@insert_lsdn');
+    Route::get('get-lich-su-dang-nhap/{prodider}', 'Api\decuongController@getlichsudangnhap');
+
+    Route::get('get-list-news-feed/{pageCurrent}', 'Api\decuongController@getlistnewsfeed');
 });
 
 Route::group(['middleware' => 'api','prefix' => 'auth'], function ($router) {

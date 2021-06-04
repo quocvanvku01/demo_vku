@@ -15,25 +15,10 @@ use Illuminate\Support\Facades\Route;
  
 Route::get('/', 'home@index');
 
-Route::get('/carousel', function() {
-	return view('pages.carousel');
-});
-
-Route::get('/resapi', function() {
-	$connect = mysqli_connect("localhost","root","", "demo_resapi_kotlin");
-    $sql=mysqli_query($connect, "select * from cau_thu");
-    if($sql === FALSE) {
-        die(mysql_error()); // TODO: better error handling
-    }
-    while($row=mysqli_fetch_assoc($sql))
-        $output[]=$row;
-    print(json_encode($output));
-});
-
 Route::get('/theme-2', 'home@index_theme_2')->name('them-2');
 Route::get('/theme-2/getdataallaj', 'getAjax@getdataallaj');
 
-Route::get('/theme-3', 'home@index_theme_3')->name('them-3');;
+Route::get('/theme-3', 'home@index_theme_3')->name('them-3');
 
 Route::get('/gioi-thieu-khoa', 'home@gioithieu');
 
@@ -166,6 +151,10 @@ Route::get('thong-bao', 'home@thong_bao');
 // Multiple language
 
 Route::get('language/{language}', 'LanguageController@index');
+
+// Crwal data
+
+Route::get('crawl', 'CrawlDataController@index');
 
 
 

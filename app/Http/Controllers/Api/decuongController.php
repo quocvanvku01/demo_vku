@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Http;
 use App\User;
 use App\Models\lichsudangnhap;
+use App\Models\cmscrawl;
 
 class decuongController extends Controller
 {
@@ -75,41 +76,63 @@ class decuongController extends Controller
      */
     public function getlistmonhoc($id_gv) {
 
-        $account = DB::table('table_account')->where('id_chucvu', $id_gv)->first();
+        $request = request();
+        $token = $request->bearerToken();
 
-        $lich = DB::table('table_lich_gv')
-        ->where('id_gv', $id_gv)
-        ->join('table_lich', 'table_lich_gv.id_lich', 'table_lich.id')
-        ->join('table_lophocphan', 'table_lich.id_lhp', 'table_lophocphan.id')
-        ->join('table_hocphan', 'table_lophocphan.id_hocphan', 'table_hocphan.id')
-        ->join('table_decuongchitiet', 'table_lophocphan.id_hocphan', 'table_decuongchitiet.id_hocphan')
-        ->select('tenhocphan', 'id_decuong')
-        ->DISTINCT()
-        ->get();
+        $user = User::where('remember_token', $token)->first();
 
-        return $lich;
+        if($user) {
+            $account = DB::table('table_account')->where('id_chucvu', $id_gv)->first();
+
+            $lich = DB::table('table_lich_gv')
+            ->where('id_gv', $id_gv)
+            ->join('table_lich', 'table_lich_gv.id_lich', 'table_lich.id')
+            ->join('table_lophocphan', 'table_lich.id_lhp', 'table_lophocphan.id')
+            ->join('table_hocphan', 'table_lophocphan.id_hocphan', 'table_hocphan.id')
+            ->join('table_decuongchitiet', 'table_lophocphan.id_hocphan', 'table_decuongchitiet.id_hocphan')
+            ->select('tenhocphan', 'id_decuong')
+            ->DISTINCT()
+            ->get();
+
+            foreach($lich as $value) {
+                $value->token123 = $token;
+            }
+
+            return $lich;
+        } 
 
     } 
 
     public function getkehoachgiangday($id_decuong) {
 
-        $decuong = DB::table('table_decuongchitiet')->where('id_decuong', $id_decuong)
-        ->select('id_hocphan')
-        ->first();
+        $request = request();
+        $token = $request->bearerToken();
 
-        //echo $id_hocphan = $decuong->id_hocphan;
+        $user = User::where('remember_token', $token)->first();
 
-        $all_khgd = DB::table('table_kehoachgiangday')
-        ->select('noidung')
-        ->where('id_hocphan', $decuong->id_hocphan)->get();
+        if($user) {
+            $decuong = DB::table('table_decuongchitiet')->where('id_decuong', $id_decuong)
+            ->select('id_hocphan')
+            ->first();
 
-        $stt = 1;
-        foreach($all_khgd as $value) {
-            $value->buoi = "Buổi ".$stt++;
-            $value->noidung = $this->tach_khgd($value->noidung);
+            //echo $id_hocphan = $decuong->id_hocphan;
+
+            $all_khgd = DB::table('table_kehoachgiangday')
+            ->select('noidung')
+            ->where('id_hocphan', $decuong->id_hocphan)->get();
+
+            $stt = 1;
+            foreach($all_khgd as $value) {
+                $value->buoi = "Buổi ".$stt++;
+                $value->noidung = $this->tach_khgd($value->noidung);
+            }
+
+            return $all_khgd;
         }
 
-        return $all_khgd;
+        
+
+        
 
     }
 
@@ -130,21 +153,31 @@ class decuongController extends Controller
 
     public function getlichhomnay($id_gv) {
 
-        $day = Carbon::now()->dayOfWeek;
+        $request = request();
+        $token = $request->bearerToken();
 
-        $lich = DB::table('table_lich_gv')
-        ->join('table_lich', 'table_lich.id', 'table_lich_gv.id_lich')
-        ->join('table_lophocphan', 'table_lich.id_lhp', 'table_lophocphan.id')
-        ->where('id_gv', $id_gv)
-        ->where('thu', $day+1)
-        ->get();
+        $user = User::where('remember_token', $token)->first();
+        
+        if ($user) {
+            $day = Carbon::now()->dayOfWeek;
 
-        foreach($lich as $value_lich) {
-            $value_lich->thoigian = $this->convert_thoigian($value_lich->tiet);
-            $value_lich->tiet = $this->convert_tiet($value_lich->tiet);
-        }
+            $lich = DB::table('table_lich_gv')
+            ->join('table_lich', 'table_lich.id', 'table_lich_gv.id_lich')
+            ->join('table_lophocphan', 'table_lich.id_lhp', 'table_lophocphan.id')
+            ->where('id_gv', $id_gv)
+            ->where('thu', $day+1)
+            ->get();
 
-        return $lich;
+            foreach($lich as $value_lich) {
+                $value_lich->thoigian = $this->convert_thoigian($value_lich->tiet);
+                $value_lich->tiet = $this->convert_tiet($value_lich->tiet);
+            }
+
+            return $lich;
+
+        } 
+
+        
     }
 
     public function getlich($id_gv) {
@@ -152,54 +185,47 @@ class decuongController extends Controller
         $now = Carbon::now();
         $start =  Carbon::create(2020, 7, 27); 
         $week = $now->diffInWeeks($start);
-        $weekcurrent = 1;
+        $weekcurrent = $week-30;
 
-        $lich = DB::table('table_lich_gv')
-        ->join('table_lich', 'table_lich.id', 'table_lich_gv.id_lich')
-        ->join('table_lophocphan', 'table_lich.id_lhp', 'table_lophocphan.id')
-        ->where('id_gv', $id_gv)
-        ->get();
+        $request = request();
+        $token = $request->bearerToken();
 
-        foreach($lich as $value_lich) {
-            $value_lich->thoigian = $this->convert_thoigian($value_lich->tiet);
-            $value_lich->tiet = $this->convert_tiet($value_lich->tiet);
-            $value_lich->noidung = '';
+        $user = User::where('remember_token', $token)->first();
 
-            $all_khgd = DB::table('table_kehoachgiangday')
-            ->select('noidung')
-            ->where('id_hocphan', $value_lich->id_hocphan)
+        if ($user) {
+            $lich = DB::table('table_lich_gv')
+            ->join('table_lich', 'table_lich.id', 'table_lich_gv.id_lich')
+            ->join('table_lophocphan', 'table_lich.id_lhp', 'table_lophocphan.id')
+            ->where('id_gv', $id_gv)
             ->get();
 
-            $stt = 1;
-            foreach($all_khgd as $value) {
-                $value->buoi = "Buổi ".$stt++;
-                $value->noidung = $this->tach_khgd($value->noidung);
-            }
+            foreach($lich as $value_lich) {
+                $value_lich->thoigian = $this->convert_thoigian($value_lich->tiet);
+                $value_lich->tiet = $this->convert_tiet($value_lich->tiet);
+                $value_lich->noidung = '';
 
-            foreach($all_khgd as $value_nd) {
-                if ($value_nd->buoi == "Buổi ".$weekcurrent) {
-                    $value_lich->noidung = $value_nd->noidung;
+                $all_khgd = DB::table('table_kehoachgiangday')
+                ->select('noidung')
+                ->where('id_hocphan', $value_lich->id_hocphan)
+                ->get();
+
+                $stt = 1;
+                foreach($all_khgd as $value) {
+                    $value->buoi = "Buổi ".$stt++;
+                    $value->noidung = $this->tach_khgd($value->noidung);
+                }
+
+                foreach($all_khgd as $value_nd) {
+                    if ($value_nd->buoi == "Buổi ".$weekcurrent) {
+                        $value_lich->noidung = $value_nd->noidung;
+                    }
                 }
             }
 
-            
-
+            return $lich;
         }
 
         
-
-        
-
-        //echo "<pre>";
-        //print_r($all_khgd);
-
-        // $stt = 1;
-        // foreach($all_khgd as $value) {
-        //     $value->buoi = "Buổi ".$stt++;
-        //     $value->noidung = $this->tach_khgd($value->noidung);
-        // }
-
-        return $lich;
 
     }
 
@@ -235,8 +261,6 @@ class decuongController extends Controller
         $provider = $req->provider;
         $token = $req->token;
 
-        //tk = eyJhbGciOiJSUzI1NiIsImtpZCI6ImNkNDliMmFiMTZlMWU5YTQ5NmM4MjM5ZGFjMGRhZGQwOWQ0NDMwMTIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI2ODAyNzExODA4NjYtaWN1azNvdHY4ZWV1ZzQ4dGNrc3I3cWhwcWk4cnBwNW4uYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI2ODAyNzExODA4NjYtN2RmOG0yN2ljZ2FtMDB2azBrZzc3ZGptMGIzY3BtNmIuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTI3NjMzNzQ4MDA0NTc2Mjc2OTQiLCJoZCI6InZrdS51ZG4udm4iLCJlbWFpbCI6InBxdmFuLjE5aXQzQHZrdS51ZG4udm4iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6IlbEg24gUGjhuqFtIFF14buRYyIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQVRYQUp3WUVkcjh6Y3J1Q1QtVll4NnlVeklkb21mZ3BCRkp2NXlJRmJmWj1zOTYtYyIsImdpdmVuX25hbWUiOiJWxINuIiwiZmFtaWx5X25hbWUiOiJQaOG6oW0gUXXhu5FjIiwibG9jYWxlIjoiZW4iLCJpYXQiOjE2MjE3MzQ2MDAsImV4cCI6MTYyMTczODIwMH0.U2CvqKcZPn-_LboBWWGqJAz-BUUEgT9FSWJuJXFBBWUAhX590Ifq_BfACcW2i_evc7IDEZ9rBZVv6OIYYT-HM8JYtX5fi9_ZYZOP5ImPSPUP5QzjLzVh4QcRgos78BwlNrMztTS1BhXUkJDkgYByfNf8qXuWJS8MQ-CbQ6rsLDkJyZTJGPPHFWG8qeIkykQyYJW9qVBxfWmcXGF3RXsIZvZ810nLm2-RERYwn1AmqOOt1d0ka5RVLNZNynP0R88PQ-Z1JzQL3NjropdIZTsm7ATew9Ju9o6klO-Eym2ywU6ebLTEyyBLm0GGyugBEGS2CPjh94GxIS3KAxrkD1wEaw
-
         $userId = '';
         $userEmail = '';
 
@@ -244,14 +268,16 @@ class decuongController extends Controller
             $getInfo = Http::get('https://oauth2.googleapis.com/tokeninfo', [
                 'id_token' => $token
             ]);
-
             $userId = $getInfo['sub'];
             $userEmail = $getInfo['email'];
-
         }
 
         $user = User::where('id_provider', $userId)->first();
 
+        if($token != $user->remember_token) {
+            $user->remember_token = $token;
+            $user->save();
+        }
 
         $account = DB::table('table_account')->where('id_user', $user->id)->first();
 
@@ -264,22 +290,6 @@ class decuongController extends Controller
         }
 
         $user->image = $getInfo['picture'];
-
-        // if(!$user) {
-        //     if(!User::where('email', $userEmail)->count() != 0) {
-
-        //         $data = ([
-        //             'name' => 'GV',
-        //             'email' => $userEmail,
-        //             'id_gv' => 110,
-        //             'id_provider' => $userId
-        //         ]);
-        //         $user = new User($data);
-        //         $user->save();
-        //     }
-        // } else if($provider == 'google') {
-        //     $user->image = $getInfo['picture'];
-        // }
 
         return response()->json([
             "success" => true,
@@ -297,32 +307,85 @@ class decuongController extends Controller
         $ngaygio = $req->ngaygio;
         $email = $req->email;
 
-        $user = User::where('email', $email)->first();
+        $request = request();
+        $token = $request->bearerToken();
 
-        $id_user = $user->id;
+        $user1 = User::where('remember_token', $token)->first();
 
-        $userlsdn = lichsudangnhap::where('id_user', $id_user)->where('tenthietbi', $tenthietbi)->first();
+        if($user1) {
+            $user = User::where('email', $email)->first();
 
-        if($userlsdn) {
-            $userlsdn->tenthietbi = $tenthietbi;
-            $userlsdn->vitri = $vitri;
-            $userlsdn->ngaygio = $ngaygio;
-            $userlsdn->id_user = $id_user;
-            $userlsdn->save();
-        } else {
-            $lsdn = new lichsudangnhap;
-            $lsdn->tenthietbi = $tenthietbi;
-            $lsdn->vitri = $vitri;
-            $lsdn->ngaygio = $ngaygio;
-            $lsdn->id_user = $id_user;
-            $lsdn->save();
+            $id_user = $user->id;
+
+            $userlsdn = lichsudangnhap::where('id_user', $id_user)->where('tenthietbi', $tenthietbi)->first();
+
+            if($userlsdn) {
+                $userlsdn->tenthietbi = $tenthietbi;
+                $userlsdn->vitri = $vitri;
+                $userlsdn->ngaygio = $ngaygio;
+                $userlsdn->id_user = $id_user;
+                $userlsdn->save();
+            } else {
+                $lsdn = new lichsudangnhap;
+                $lsdn->tenthietbi = $tenthietbi;
+                $lsdn->vitri = $vitri;
+                $lsdn->ngaygio = $ngaygio;
+                $lsdn->id_user = $id_user;
+                $lsdn->save();
+            }
+
+            
+            return response()->json([
+                "success" => $userlsdn
+            ]);
+
         }
 
         
-        return response()->json([
-            "success" => $userlsdn
-        ]);
 
+    }
+
+    public function getlichsudangnhap($provider) {
+
+        $user = User::where('id_provider', $provider)->first();
+
+        $id_user = $user->id;
+
+        $lsdn = DB::table("table_lichsudangnhap")->where("id_user", $id_user)->get();
+
+        return $lsdn;
+
+    }
+
+    public function getlistnewsfeed($pageCurrent) {
+        //$newsfeed = cmscrawl::orderBy('id', 'desc')->take(15)->get();
+
+        $num_start = $pageCurrent;
+
+        $countrow = cmscrawl::count();
+
+        $currentPage = $num_start ? $num_start : 1;
+
+        $pageShow = 7;
+
+        $countPage = ceil($countrow / $pageShow);
+
+        if ($currentPage > $countPage) {
+            $currentPage = $countPage;
+        }
+        if ($currentPage < 1) {
+            $currentPage = 1;
+        }
+
+        $pageStart = ($currentPage - 1) * $pageShow;
+
+        $newsfeed = cmscrawl::orderBy('id', 'desc')->offset($pageStart)->limit($pageShow)->get();
+
+        foreach($newsfeed as $value) {
+            $value->ngay = substr($value->ngay, 2, 10);
+        }
+
+        return $newsfeed; 
     }
 
 
